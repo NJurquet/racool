@@ -2,17 +2,38 @@
 
 SCD41::SCD41()
 {
+    co2 = 0;
+    temperature = 0.0f;
+    humidity = 0.0f;
+    isDataReady = false;
 }
 
 void SCD41::init()
 {
+    uint16_t error;
+    char errorMessage[256];
+
     Wire.begin();
     scd4x.begin(Wire);
+
     // stop potentially previously started measurement
-    scd4x.stopPeriodicMeasurement();
+    error = scd4x.stopPeriodicMeasurement();
+    if (error)
+    {
+        Serial.print("CO2 : Error trying to execute stopPeriodicMeasurement(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    }
+
     // Start Measurement
-    scd4x.startPeriodicMeasurement();
-    Serial.println("Waiting for first measurement... (5 sec)");
+    error = scd4x.startPeriodicMeasurement();
+    if (error)
+    {
+        Serial.print("CO2 : Error trying to execute startPeriodicMeasurement(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    }
+    Serial.println("Waiting for first CO2 measurement... (5 sec)");
 }
 
 void SCD41::read()
@@ -20,16 +41,29 @@ void SCD41::read()
     uint16_t error;
     char errorMessage[256];
 
+    error = scd4x.getDataReadyFlag(isDataReady);
+    if (error)
+    {
+        Serial.print("CO2 : Error trying to execute getDataReadyFlag(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+        return;
+    }
+    if (!isDataReady)
+    {
+        return;
+    }
+
     error = scd4x.readMeasurement(co2, temperature, humidity);
     if (error)
     {
-        Serial.print("Error trying to execute readMeasurement(): ");
+        Serial.print("CO2 : Error trying to execute readMeasurement(): ");
         errorToString(error, errorMessage, 256);
         Serial.println(errorMessage);
     }
     else if (co2 == 0)
     {
-        Serial.println("Invalid sample detected, skipping.");
+        Serial.println("Invalid CO2 sample detected, skipping.");
     }
     else
     {
@@ -49,12 +83,12 @@ uint16_t SCD41::getCO2()
     return co2;
 }
 
-float SCD41::getTemperature()
+double SCD41::getTemperature()
 {
-    return temperature;
+    return (double)temperature;
 }
 
-float SCD41::getHumidity()
+double SCD41::getHumidity()
 {
-    return humidity;
+    return (double)humidity;
 }

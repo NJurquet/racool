@@ -15,15 +15,16 @@ public:
 
     uint16_t getCO2();
 
-    float getTemperature();
+    double getTemperature();
 
-    float getHumidity();
+    double getHumidity();
 
 private:
     SensirionI2CScd4x scd4x;
     uint16_t co2;
     float temperature;
     float humidity;
+    bool isDataReady;
 };
 
 #endif // SCD41_H
